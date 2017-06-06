@@ -1,4 +1,4 @@
-##2017 Spring MLADS Tutorial 159
+## 2017 Spring MLADS Tutorial 159
 ## Build Machine Learning Solutions in Azure Data Lake with R, Python and Big Cognition
 
 Welcome to this tutorial! This session is be a hands-on lab. Follow the steps here to finish your lab tasks: 
