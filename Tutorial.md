@@ -36,6 +36,18 @@ There are some sample data and scripts you can play around and get some sense of
 
  ![](./media/click-two-buttons.PNG)
 
+In order to use the R, Python, and Cognition extensions, click **... More** button to install those extensions. 
+
+ ![](./media/click-install-extensions.PNG)
+
+Then a U-SQL job is kicked off to register the assemblies. You can check the status in **View All Jobs**
+
+ ![](./media/job-register-assembly.PNG)
+
+After the job is finished successfully, go to **Data Explorer -->Catalog --> master --> Assemblies**, you will see that a list of extensions are installed.
+
+ ![](./media/assemblies-registered.PNG)
+
 Now you can try some U-SQL queries to get familiar with U-SQL syntax and ADL.
 
  ![](./media/try-USQL.PNG)
