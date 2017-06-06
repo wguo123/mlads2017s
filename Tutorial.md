@@ -224,7 +224,7 @@ In this exercise, you will use the cognition library's image OCR capability to e
 
 	![Exercise 2 image_ocr.csv](./media/Portal_Ex2_image_ocr.jpg)
 
-	![Exercise 2 ocr_keyphrases.csv](./Images/Portal_Ex2_ocr_keyphrases.jpg)
+	![Exercise 2 ocr_keyphrases.csv](./media/Portal_Ex2_ocr_keyphrases.jpg)
 
 ## Exercise 3: Finding potentially related images and books
 
