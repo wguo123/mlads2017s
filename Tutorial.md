@@ -265,13 +265,8 @@ In the R script:
 	    model = LogisticRegression()
 	    Y = df[['Species']]
 	    X = df[['SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth']]
-	    #X = df.iloc[:,1:5]
-	    #Y = df.iloc[:,5]
 	    m = model.fit(X,Y.values.ravel())
 	    res = pickle.dumps(model)
-	    #res_encoded = base64.b64encode(res)
-	    #res_encoded = res.encode('utf-8')
-	    #res_encoded = binascii.hexlify(res)
 	    res_encoded = str(res)
 	    outdf = pd.DataFrame({'Par': 0, 'model':res_encoded},index=[0])
 	    return outdf
