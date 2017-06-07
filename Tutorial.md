@@ -122,24 +122,12 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	import pandas as pd
 	import numpy as np
 	
-	def num_missing(x):
-	    return len(x.index)-x.count()
-	
-	def num_unique(x):
-	    return len(np.unique(x))
-	    
-	def usqlml_mail(data):       
-	    temp_df = data.describe().T
-	    missing_df = pd.DataFrame(data.apply(num_missing, axis=0)) 
-	    missing_df.columns = ['missing']
-	    unq_df = pd.DataFrame(data.apply(num_unique, axis=0))
-	    unq_df.columns = ['unique']
-	    types_df = pd.DataFrame(data.dtypes)
-	    types_df.columns = ['DataType']
-	    summary_df = temp_df.join(missing_df).join(unq_df).join(types_df)
-	    summary_df=summary_df.rename(columns = {'25%':'pct25','50%':'pct50','75%':'pct75'})
-	    summary_df['column'] = summary_df.index
-	    return summary_df   
+	def usqlml_main(df):     
+	    temp_df = df.describe().T
+	    temp_df=temp_df.rename(columns = {'25%':'pct25','50%':'pct50','75%':'pct75'})
+	    temp_df['varname'] = temp_df.index
+	    temp_df['Par'] = 0
+	    return temp_df
 	";
 	
 	@Input =
@@ -148,13 +136,18 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	            PetalLength double,
 	            PetalWidth double,
 	            Species string
-	    FROM @"/usqlext/samples/R/iris.csv"
+	    FROM @"/usqlext/samples/python/iris.csv"
 	    USING Extractors.Csv();
 	
+	@Extended =
+	    SELECT 0 AS Par,
+	           *
+	    FROM @Input;
+	
 	@PyOutput =
-	    REDUCE @Input
-	    ON column, count, mean, std, min, pct25, pct50, pct75, max, missing, unique, DataType
-	    PRODUCE column string,
+	    REDUCE @Extended
+	    ON Par
+	    PRODUCE 
 	            count double,
 	            mean double,
 	            std double,
@@ -162,15 +155,14 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	            pct25 double,
 	            pct50 double,
 	            pct75 double,
-	            max float,
-	            missing int,
-	            unique int,
-	            DataType string
+	            max double,
+	            varname string,
+	            Par double
 	    USING new Extension.Python.Reducer(pyScript: @myPyScript);
 	
 	
 	OUTPUT @PyOutput
-	TO @"/MLADS2017S/iris_summary.Csv"
+	TO @"/usqlext/samples/python/iris_summary.Csv"
 	USING Outputters.Csv();
 
 
