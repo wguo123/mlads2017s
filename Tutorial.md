@@ -68,9 +68,89 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 ## Exercise 1:
 
 ## Exercise 2:
+	REFERENCE ASSEMBLY [ExtR];
+	
+	DEPLOY RESOURCE @"/usqlext/samples/R/RinUSQL_TrainLinearModel_AsBinaryDF.R";
+	
+	DECLARE @IrisData string =  @"/usqlext/samples/R/iris.csv";
+	DECLARE @OutputFileModelSummary string = @"/my/R/Output/LMModelsRawStringIris.txt";
+	DECLARE @PartitionCount int = 5;
+	
+	@InputData =
+	    EXTRACT SepalLength double,
+	            SepalWidth double,
+	            PetalLength double,
+	            PetalWidth double,
+	            Species  string
+	    FROM @IrisData
+	    USING Extractors.Csv();
+	
+	@ExtendedData =
+	    SELECT Extension.R.RandomNumberGenerator.GetRandomNumber(@PartitionCount) AS Par,
+	           *
+	    FROM @InputData;
+	
+	@ModelCoefficients = REDUCE @ExtendedData ON Par
+	PRODUCE Par int, Model string
+	READONLY Par
+	USING new Extension.R.Reducer(scriptFile:"RinUSQL_TrainLinearModel_AsBinaryDF.R", rReturnType:"dataframe");
+	
+	OUTPUT @ModelCoefficients TO @OutputFileModelSummary USING Outputters.Tsv();
 
+In the R script:
+
+	inputFromUSQL$Species <- as.factor(inputFromUSQL$Species)
+	lm.fit<-lm(unclass(Species)~.-Par, data=inputFromUSQL)
+	
+	#do not return readonly columns and make sure that the column names are the same in usql and r scripts
+	library(base64enc)
+	# 128KB per row, need to split the model if model size is larger
+	# byte stream can go up to 4mb 
+	outputToUSQL <- data.frame(Model=base64encode(serialize(lm.fit, NULL)), stringsAsFactors = FALSE)
 ## Exercise 3:
 
+	REFERENCE ASSEMBLY [ExtR];
+	
+	DEPLOY RESOURCE @"/usqlext/samples/R/RinUSQL_PredictUsingRawModelAsResource_AsDF.R";
+	DEPLOY RESOURCE @"/usqlext/samples/R/LMModelsRawStringIris.txt"; // R script uses this file, it has models per Par in it.
+	
+	DECLARE @IrisData string =  @"/usqlext/samples/R/iris.csv";
+	DECLARE @OutputFilePredictions string = @"/my/R/Output/LMPredictionsRawStringReducerIris.txt";
+	DECLARE @PartitionCount int = 5;
+	
+	@InputData =
+	    EXTRACT SepalLength double,
+	            SepalWidth double,
+	            PetalLength double,
+	            PetalWidth double,
+	            Species  string
+	    FROM @IrisData
+	    USING Extractors.Csv();
+	
+	// Normally, we would like to use a different model per userId, per area, etc.
+	// We are using a random partition just to show functionality.
+	@ExtendedData =
+	    SELECT Extension.R.RandomNumberGenerator.GetRandomNumber(@PartitionCount) AS Par,
+	           *
+	    FROM @InputData;
+	
+	@Predictions = REDUCE @ExtendedData ON Par
+	                 PRODUCE Par, Prediction double
+	                 READONLY Par
+	                 USING new Extension.R.Reducer(scriptFile:"RinUSQL_PredictUsingRawModelAsResource_AsDF.R");
+	
+	OUTPUT @Predictions TO @OutputFilePredictions USING Outputters.Tsv();
+
+In the R script:
+
+	# load models
+	models = read.table("LMModelsRawStringIris.txt", header = FALSE, stringsAsFactors=FALSE)
+	colnames(models) <- c("Par", "Model")
+	
+	library(base64enc)
+	partition<-inputFromUSQL$Par[1] +1
+	modelForPartition <- unserialize(base64decode(models$Model[partition]))
+	outputToUSQL=data.frame(Prediction=predict(modelForPartition, inputFromUSQL))
 
 
 
@@ -177,8 +257,9 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	import pandas as pd
 	import sklearn
 	from sklearn.linear_model import LogisticRegression
-	#import pickle
-	#import base64
+	import pickle
+	import base64
+	import binascii
 	
 	def usqlml_main(df):
 	    model = LogisticRegression()
@@ -186,10 +267,13 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	    X = df[['SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth']]
 	    #X = df.iloc[:,1:5]
 	    #Y = df.iloc[:,5]
-	    model.fit(X,Y)
-	    #res = pickle.dumps(model)
+	    m = model.fit(X,Y.values.ravel())
+	    res = pickle.dumps(model)
 	    #res_encoded = base64.b64encode(res)
-	    outdf = pd.DataFrame({'model':model},index=[0])
+	    #res_encoded = res.encode('utf-8')
+	    #res_encoded = binascii.hexlify(res)
+	    res_encoded = str(res)
+	    outdf = pd.DataFrame({'Par': 0, 'model':res_encoded},index=[0])
 	    return outdf
 	";
 	
@@ -199,7 +283,7 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	            PetalLength double,
 	            PetalWidth double,
 	            Species string
-	    FROM @"/usqlext/samples/R/iris.csv"
+	    FROM @"/usqlext/samples/python/iris.csv"
 	    USING Extractors.Csv();
 	
 	@Extended =
@@ -210,15 +294,14 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 	@PyOutput =
 	    REDUCE @Extended
 	    ON Par
-	    PRODUCE Par int,
+	    PRODUCE Par double,
 	            model string
 	    USING new Extension.Python.Reducer(pyScript: @myPyScript);
 	
 	
 	OUTPUT @PyOutput
-	TO @"/MLADS2017S/iris_model.Csv"
+	TO @"/usqlext/samples/python/iris_model.Csv"
 	USING Outputters.Csv();
-
 
 
 
