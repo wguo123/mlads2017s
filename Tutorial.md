@@ -76,11 +76,158 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 
 # Python in U-SQL
 
-## Exercise 1:
+## Exercise 1: Extract mentions from Twitter data
 
-## Exercise 2:
+	REFERENCE ASSEMBLY [ExtPython];
+	
+	DECLARE @myScript = @"
+	def get_mentions(tweet):
+	    return ';'.join( ( w[1:] for w in tweet.split() if w[0]=='@' ) )
+	
+	def usqlml_main(df):
+	    del df['time']
+	    del df['author']
+	    df['mentions'] = df.tweet.apply(get_mentions)
+	    del df['tweet']
+	    return df
+	";
+	
+	@t  = 
+	    SELECT * FROM 
+	        (VALUES
+	            ("D1","T1","A1","@foo Hello World @bar"),
+	            ("D2","T2","A2","@baz Hello World @beer")
+	        ) AS 
+	              D( date, time, author, tweet );
+	
+	@m  =
+	    REDUCE @t ON date
+	    PRODUCE date string, mentions string
+	    USING new Extension.Python.Reducer(pyScript:@myScript);
+	
+	
+	OUTPUT @m
+	  TO "/tweetmentions.csv"
+	  USING Outputters.Csv();
 
-## Exercise 3:
+
+
+## Exercise 2: summarize Iris data
+
+	// Load Assebmly
+	REFERENCE ASSEMBLY [ExtPython];
+	
+	// Python script to run
+	DECLARE @myPyScript = @"
+	import pandas as pd
+	import numpy as np
+	
+	def num_missing(x):
+	    return len(x.index)-x.count()
+	
+	def num_unique(x):
+	    return len(np.unique(x))
+	    
+	def usqlml_mail(data):       
+	    temp_df = data.describe().T
+	    missing_df = pd.DataFrame(data.apply(num_missing, axis=0)) 
+	    missing_df.columns = ['missing']
+	    unq_df = pd.DataFrame(data.apply(num_unique, axis=0))
+	    unq_df.columns = ['unique']
+	    types_df = pd.DataFrame(data.dtypes)
+	    types_df.columns = ['DataType']
+	    summary_df = temp_df.join(missing_df).join(unq_df).join(types_df)
+	    summary_df=summary_df.rename(columns = {'25%':'pct25','50%':'pct50','75%':'pct75'})
+	    summary_df['column'] = summary_df.index
+	    return summary_df   
+	";
+	
+	@Input =
+	    EXTRACT SepalLength double,
+	            SepalWidth double,
+	            PetalLength double,
+	            PetalWidth double,
+	            Species string
+	    FROM @"/usqlext/samples/R/iris.csv"
+	    USING Extractors.Csv();
+	
+	@PyOutput =
+	    REDUCE @Input
+	    ON column, count, mean, std, min, pct25, pct50, pct75, max, missing, unique, DataType
+	    PRODUCE column string,
+	            count double,
+	            mean double,
+	            std double,
+	            min double,
+	            pct25 double,
+	            pct50 double,
+	            pct75 double,
+	            max float,
+	            missing int,
+	            unique int,
+	            DataType string
+	    USING new Extension.Python.Reducer(pyScript: @myPyScript);
+	
+	
+	OUTPUT @PyOutput
+	TO @"/MLADS2017S/iris_summary.Csv"
+	USING Outputters.Csv();
+
+
+
+## Exercise 3: Train a sklean model using Iris data
+
+	// Load Assebmly
+	REFERENCE ASSEMBLY [ExtPython];
+	
+	// Python script to run
+	DECLARE @myPyScript = @"
+	import pandas as pd
+	import sklearn
+	from sklearn.linear_model import LogisticRegression
+	#import pickle
+	#import base64
+	
+	def usqlml_main(df):
+	    model = LogisticRegression()
+	    Y = df[['Species']]
+	    X = df[['SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth']]
+	    #X = df.iloc[:,1:5]
+	    #Y = df.iloc[:,5]
+	    model.fit(X,Y)
+	    #res = pickle.dumps(model)
+	    #res_encoded = base64.b64encode(res)
+	    outdf = pd.DataFrame({'model':model},index=[0])
+	    return outdf
+	";
+	
+	@Input =
+	    EXTRACT SepalLength double,
+	            SepalWidth double,
+	            PetalLength double,
+	            PetalWidth double,
+	            Species string
+	    FROM @"/usqlext/samples/R/iris.csv"
+	    USING Extractors.Csv();
+	
+	@Extended =
+	    SELECT 0 AS Par,
+	           *
+	    FROM @Input;
+	
+	@PyOutput =
+	    REDUCE @Extended
+	    ON Par
+	    PRODUCE Par int,
+	            model string
+	    USING new Extension.Python.Reducer(pyScript: @myPyScript);
+	
+	
+	OUTPUT @PyOutput
+	TO @"/MLADS2017S/iris_model.Csv"
+	USING Outputters.Csv();
+
+
 
 
 
