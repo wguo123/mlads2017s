@@ -108,6 +108,7 @@ In the R script:
 	# 128KB per row, need to split the model if model size is larger
 	# byte stream can go up to 4mb 
 	outputToUSQL <- data.frame(Model=base64encode(serialize(lm.fit, NULL)), stringsAsFactors = FALSE)
+
 ## Exercise 3:
 
 	REFERENCE ASSEMBLY [ExtR];
@@ -156,6 +157,23 @@ In the R script:
 
 
 # Python in U-SQL
+
+You probably have to update the assemblies for Python extensions as some packages are not installed in the server side. 
+
+1. Go to **https://tinyurl.com/yb9usj8m** to download all four files to your local machine. 
+2. In your ADLA account go to **Data explorer --> usqlext --> assembly --> python**, deleting the old files and upload with the new ones obtained from above.
+
+ ![](./media/update-py-assemblies.PNG)
+
+3. After the assemblies are updated, go to usqlext folder, open PythonAssembly.usql copy the script
+
+ ![](./media/register-py-assemblies.PNG)
+
+ ![](./media/copy-py-assemblies-reg-script.PNG)
+
+4. Create a new job, paste the script, and submit the job the register the assemblies. 
+
+ ![](./media/register-py-assemblies-done.PNG)
 
 ## Exercise 1: Extract mentions from Twitter data
 
