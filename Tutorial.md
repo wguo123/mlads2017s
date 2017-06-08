@@ -20,7 +20,7 @@ To complete this lab you'll need:
 
 	![](./media/sign-in.PNG)
 
-3. In the Search resources box, type in the account info on your slip and click enter.
+3. In the Search resources box, type in the account info on your slip and click enter, for example, if you get number 18, please type in **aiimmersionlabadla18**
 
 	![](./media/find-your-account.PNG)
 
@@ -60,7 +60,8 @@ After U-SQL job is submitted, you can track the job status and look at the input
 You can always go to View All Jobs to look at submitted jobs, modify scripts and resubmit. To submit another job, click the **+ New job button**. 
 
  ![](./media/view-all-jobs.PNG)
-
+ 
+ ![](./media/view-all-jobs-list.PNG)
 
 
 # R in U-SQL
@@ -596,3 +597,5 @@ The above query used a `JOIN` expression. When you work with joins in U-SQL, not
 
 U-SQL requires this manual rewrite to make it explicit where the cost is when joining two data sets. Currently only equijoins have more efficient processing than a cross join with filters.
 
+
+## Put R, Python, and Cognitive serviced in one script
