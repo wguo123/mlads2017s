@@ -296,13 +296,60 @@ In the R script:
 	
 	OUTPUT @PyOutput
 	TO @"/usqlext/samples/python/iris_model.Csv"
+	USING Outputters.Csv(outputHeader: true);
+
+## Exercise 4: Score new data with a locally trained model in json
+
+	// Load Assebmly
+	REFERENCE ASSEMBLY [ExtPython];
+	
+	// Load Trained model
+	//DEPLOY RESOURCE @"/usqlext/samples/python/iris_model.Csv";
+	DEPLOY RESOURCE @"/usqlext/samples/python/model.json";
+	
+	// Python script to run
+	DECLARE @myPyScript = @"
+	import pandas as pd
+	import sklearn
+	import pickle
+	import numpy as np
+	
+	def usqlml_main(df):
+	    model_raw_in = pd.read_json('model.json')
+	    model_obj = model_raw_in['model'][0]
+	    model_use = model_obj.encode(encoding='latin-1')
+	    model_use = pickle.loads(model_use)    
+	    X = df.iloc[45:55,1:5].as_matrix()
+	    Y_pred = model_use.predict(X)
+	    outdf = pd.DataFrame({'Par':np.repeat(0, X.shape[0]), 'Prediction':Y_pred})
+	    return outdf
+	";
+	
+	@Input =
+	    EXTRACT SepalLength double,
+	            SepalWidth double,
+	            PetalLength double,
+	            PetalWidth double,
+	            Species string
+	    FROM @"/usqlext/samples/python/iris.csv"
+	    USING Extractors.Csv();
+	
+	@Extended =
+	    SELECT 0 AS Par,
+	           *
+	    FROM @Input;
+	
+	@PyOutput =
+	    REDUCE @Extended
+	    ON Par
+	    PRODUCE Par int,
+	            Prediction string
+	    USING new Extension.Python.Reducer(pyScript: @myPyScript);
+	
+	
+	OUTPUT @PyOutput
+	TO @"/usqlext/samples/python/iris_prediction.Csv"
 	USING Outputters.Csv();
-
-
-
-
-
-
 
 # Cognitive capabilities in U-SQL
 
