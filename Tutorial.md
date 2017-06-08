@@ -66,7 +66,54 @@ You can always go to View All Jobs to look at submitted jobs, modify scripts and
 
 # R in U-SQL
 
+Get started with extending U-SQL with R : https://docs.microsoft.com/en-us/azure/data-lake-analytics/data-lake-analytics-u-sql-r-extensions
+Sample code available when you install extensions. Location for samples : /usqlext/samples/R
+
+
 ## Exercise 1:
+	REFERENCE ASSEMBLY [ExtR];
+
+	DEPLOY RESOURCE @"/usqlext/samples/R/RinUSQL_PredictUsingLinearModelasDF.R";
+	DEPLOY RESOURCE @"/usqlext/samples/R/my_model_LM_Iris.rda";
+
+
+	DECLARE @IrisData string = @"/usqlext/samples/R/iris.csv";
+	DECLARE @OutputFilePredictions string = @"/my/R/Output/LMPredictionsIris.txt";
+	DECLARE @PartitionCount int = 10;
+
+
+
+	// R script to run
+	DECLARE @myRScript = @"
+	load(""my_model_LM_Iris.rda"")
+	outputToUSQL=data.frame(predict(lm.fit, inputFromUSQL, interval=""confidence""))
+	";
+
+
+	@InputData =
+		EXTRACT SepalLength double,
+				SepalWidth double,
+				PetalLength double,
+				PetalWidth double,
+				Species string
+		FROM @IrisData
+		USING Extractors.Csv();
+
+	@ExtendedData =
+		SELECT Extension.R.RandomNumberGenerator.GetRandomNumber(@PartitionCount) AS Par,
+			   SepalLength,
+			   SepalWidth,
+			   PetalLength,
+			   PetalWidth
+		FROM @InputData;
+
+	// Predict Species
+	@RScriptOutput = REDUCE @ExtendedData ON Par
+	PRODUCE Par, fit double, lwr double, upr double
+	READONLY Par
+	USING new Extension.R.Reducer(scriptFile:"RinUSQL_PredictUsingLinearModelasDF.R", rReturnType:"dataframe", stringsAsFactors:false);
+
+	OUTPUT @RScriptOutput TO @OutputFilePredictions USING Outputters.Tsv();
 
 ## Exercise 2:
 	REFERENCE ASSEMBLY [ExtR];
@@ -640,4 +687,60 @@ The above query used a `JOIN` expression. When you work with joins in U-SQL, not
 U-SQL requires this manual rewrite to make it explicit where the cost is when joining two data sets. Currently only equijoins have more efficient processing than a cross join with filters.
 
 
-## Put R, Python, and Cognitive service in one script
+##  R, Python, and Cognitive services can be used in one script
+	// Load Assembly
+	REFERENCE ASSEMBLY [ExtPython];
+	REFERENCE ASSEMBLY [ExtR];
+
+	// Python script to run
+	DECLARE @myPyScript = @"
+	def usqlml_main(df):
+		df1 = df.query('SepalLength > 5').assign(SepalRatio = lambda x: x.SepalWidth / x.SepalLength, PetalRatio = lambda x: x.PetalWidth / x.PetalLength)
+		return df1
+	";
+
+	// R script to run
+	DECLARE @myRScript = @"
+	require(RevoScaleR),
+	outputToUSQL = rxDTree(Species ~ SepalLength, data=inputFromUSQL)
+	";
+
+	@Input =
+		EXTRACT SepalLength double,
+				SepalWidth double,
+				PetalLength double,
+				PetalWidth double,
+				Species string
+		FROM @"/usqlext/samples/R/iris.csv"
+		USING Extractors.Csv();
+
+	@Extended =
+		SELECT 0 AS Par,
+			   *
+		FROM @Input;
+
+	@PyOutput =
+		REDUCE @Extended
+		ON Par
+		PRODUCE Par int,
+				SepalLength double,
+				SepalWidth double,
+				PetalLength double,
+				PetalWidth double,
+				Species string,
+				SepalRatio double,
+				PetalRatio double
+		USING new Extension.Python.Reducer(pyScript : @myPyScript);
+
+	@ROutput =
+		REDUCE @PyOutput
+		ON Par
+		PRODUCE Par,
+				RowId int,
+				ROutput string
+		READONLY Par
+		USING new Extension.R.Reducer(command : @myRScript, rReturnType:"charactermatrix", stringsAsFactors:true);
+
+	OUTPUT @ROutput
+	TO @"/my/mldemo/results/rdtree.csv"
+	USING Outputters.Csv();
