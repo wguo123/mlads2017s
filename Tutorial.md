@@ -259,16 +259,16 @@ In the R script:
 	from sklearn.linear_model import LogisticRegression
 	import pickle
 	import base64
-	import binascii
 	
 	def usqlml_main(df):
 	    model = LogisticRegression()
 	    Y = df[['Species']]
 	    X = df[['SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth']]
 	    m = model.fit(X,Y.values.ravel())
-	    res = pickle.dumps(model)
-	    res_encoded = str(res)
-	    outdf = pd.DataFrame({'Par': 0, 'model':res_encoded},index=[0])
+	    mod_ser = pickle.dumps(m)
+	    mod_ser_b64 = base64.b64encode(mod_ser)
+	    mod_ser_b64_str = mod_ser_b64.decode('utf-8')
+	    outdf = pd.DataFrame({'Par': 0, 'model':mod_ser_b64_str}, index =[0]) 
 	    return outdf
 	";
 	
@@ -298,14 +298,13 @@ In the R script:
 	TO @"/usqlext/samples/python/iris_model.Csv"
 	USING Outputters.Csv(outputHeader: true);
 
-## Exercise 4: Score new data with a locally trained model in json
+## Exercise 4: Score new data with a trained model from CSV
 
 	// Load Assebmly
 	REFERENCE ASSEMBLY [ExtPython];
 	
 	// Load Trained model
-	//DEPLOY RESOURCE @"/usqlext/samples/python/iris_model.Csv";
-	DEPLOY RESOURCE @"/usqlext/samples/python/model.json";
+	DEPLOY RESOURCE @"/usqlext/samples/python/iris_model.Csv";
 	
 	// Python script to run
 	DECLARE @myPyScript = @"
@@ -313,14 +312,17 @@ In the R script:
 	import sklearn
 	import pickle
 	import numpy as np
+	import base64
 	
 	def usqlml_main(df):
-	    model_raw_in = pd.read_json('model.json')
+	    model_raw_in = pd.read_csv('iris_model_v2.Csv')
 	    model_obj = model_raw_in['model'][0]
-	    model_use = model_obj.encode(encoding='latin-1')
-	    model_use = pickle.loads(model_use)    
-	    X = df.iloc[45:55,1:5].as_matrix()
+	    mod_unser_b64 = bytes(model_obj, 'utf-8')
+	    mod_unser = base64.b64decode(mod_unser_b64)
+	    model_use = pickle.loads(mod_unser)    
+	    X = df.iloc[10:20,1:5].as_matrix()
 	    Y_pred = model_use.predict(X)
+	    #b = np.repeat(0, X.shape[0])
 	    outdf = pd.DataFrame({'Par':np.repeat(0, X.shape[0]), 'Prediction':Y_pred})
 	    return outdf
 	";
@@ -349,7 +351,7 @@ In the R script:
 	
 	OUTPUT @PyOutput
 	TO @"/usqlext/samples/python/iris_prediction.Csv"
-	USING Outputters.Csv();
+	USING Outputters.Csv(outputHeader: true);
 
 # Cognitive capabilities in U-SQL
 
