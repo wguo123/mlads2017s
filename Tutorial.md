@@ -165,6 +165,8 @@ You have to update the assemblies for Python extensions as some packages are not
 
  ![](./media/update-py-assemblies.PNG)
 
+ ![](./media/upload-py-assembly.JPG)
+
 3. After the assemblies are updated, go to usqlext folder, open PythonAssembly.usql copy the script
 
  ![](./media/register-py-assemblies.PNG)
