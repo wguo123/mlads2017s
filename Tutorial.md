@@ -160,7 +160,7 @@ In the R script:
 
 You have to update the assemblies for Python extensions as some packages are not installed in the server side, or you will see errors complaining sklearn package not found.
 
-1. Go to **https://tinyurl.com/yb9usj8m** to download all four files to your local machine. 
+1. Go to **https://tinyurl.com/yb9usj8m** to download all four files to your local machine. If the lik is slow, try this **\\scratch2\scratch\mlads2017s_159**
 2. In your ADLA account go to **Data explorer --> usqlext --> assembly --> python**, deleting the old files and upload with the new ones obtained from above.
 
  ![](./media/update-py-assemblies.PNG)
