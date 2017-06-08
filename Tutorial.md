@@ -158,7 +158,7 @@ In the R script:
 
 # Python in U-SQL
 
-You probably have to update the assemblies for Python extensions as some packages are not installed in the server side. 
+You have to update the assemblies for Python extensions as some packages are not installed in the server side, or you will see errors complaining sklearn package not found.
 
 1. Go to **https://tinyurl.com/yb9usj8m** to download all four files to your local machine. 
 2. In your ADLA account go to **Data explorer --> usqlext --> assembly --> python**, deleting the old files and upload with the new ones obtained from above.
