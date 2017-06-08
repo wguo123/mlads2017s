@@ -189,9 +189,15 @@ In the R script:
 	
 	OUTPUT @m
 	  TO "/tweetmentions.csv"
-	  USING Outputters.Csv();
+	  USING Outputters.Csv(outputHeader: true);
 
+The task should be finished very quickly.
 
+ ![](./media/py-task1-res.PNG)
+
+Open the output CSV, you will see this:
+
+ ![](./media/py-task1-res2.PNG)
 
 ## Exercise 2: summarize Iris data
 
@@ -243,10 +249,14 @@ In the R script:
 	
 	
 	OUTPUT @PyOutput
-	TO @"/usqlext/samples/python/iris_summary.Csv"
-	USING Outputters.Csv();
+	TO @"/usqlext/samples/python/iris_summary.csv"
+	USING Outputters.Csv(outputHeader: true);
 
+ ![](./media/py-task2-res.PNG)
 
+Open the output CSV you will find some descriptive statistics of the columns:
+
+ ![](./media/py-task2-res2.PNG)
 
 ## Exercise 3: Train a sklean model using Iris data
 
@@ -296,8 +306,15 @@ In the R script:
 	
 	
 	OUTPUT @PyOutput
-	TO @"/usqlext/samples/python/iris_model.Csv"
+	TO @"/usqlext/samples/python/iris_model.csv"
 	USING Outputters.Csv(outputHeader: true);
+
+ ![](./media/py-task3-res.PNG)
+
+
+The serialized model is saved in the CSV file:
+
+ ![](./media/py-task3-res2.PNG)
 
 ## Exercise 4: Score new data with a trained model from CSV
 
@@ -305,7 +322,7 @@ In the R script:
 	REFERENCE ASSEMBLY [ExtPython];
 	
 	// Load Trained model
-	DEPLOY RESOURCE @"/usqlext/samples/python/iris_model.Csv";
+	DEPLOY RESOURCE @"/usqlext/samples/python/iris_model.csv";
 	
 	// Python script to run
 	DECLARE @myPyScript = @"
@@ -316,14 +333,13 @@ In the R script:
 	import base64
 	
 	def usqlml_main(df):
-	    model_raw_in = pd.read_csv('iris_model_v2.Csv')
+	    model_raw_in = pd.read_csv('iris_model.Csv')
 	    model_obj = model_raw_in['model'][0]
 	    mod_unser_b64 = bytes(model_obj, 'utf-8')
 	    mod_unser = base64.b64decode(mod_unser_b64)
 	    model_use = pickle.loads(mod_unser)    
 	    X = df.iloc[10:20,1:5].as_matrix()
 	    Y_pred = model_use.predict(X)
-	    #b = np.repeat(0, X.shape[0])
 	    outdf = pd.DataFrame({'Par':np.repeat(0, X.shape[0]), 'Prediction':Y_pred})
 	    return outdf
 	";
@@ -351,8 +367,14 @@ In the R script:
 	
 	
 	OUTPUT @PyOutput
-	TO @"/usqlext/samples/python/iris_prediction.Csv"
+	TO @"/usqlext/samples/python/iris_prediction.csv"
 	USING Outputters.Csv(outputHeader: true);
+
+ ![](./media/py-task4-res.PNG)
+
+Open the output CSV you will see the predictions:
+
+ ![](./media/py-task4-res2.PNG)
 
 # Cognitive capabilities in U-SQL
 
@@ -598,4 +620,4 @@ The above query used a `JOIN` expression. When you work with joins in U-SQL, not
 U-SQL requires this manual rewrite to make it explicit where the cost is when joining two data sets. Currently only equijoins have more efficient processing than a cross join with filters.
 
 
-## Put R, Python, and Cognitive serviced in one script
+## Put R, Python, and Cognitive service in one script
