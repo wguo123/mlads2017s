@@ -16,11 +16,11 @@ To complete this lab you'll need:
 
 1. Open the address [https://portal.azure.com](http://portal.azure.com) in your webbrowser. 
 
-2. Sign in using the account name and passcode shown in screen, make sure you are logging out your work account. If you log in successfully, you can see on the right corner showing *user1@BigDataDemos.onmicrosoft.com*
+2. Sign in using the account name and passcode shown in screen, make sure you are logging out your work account. If you log in successfully, you can see on the right corner showing *abcdefg12345*
 
 	![](./media/sign-in.PNG)
 
-3. In the Search resources box, type in the account info on your slip and click enter, for example, if you get number 18, please type in **aiimmersionlabadla18**
+3. In the Search resources box, type in the account info on your slip and click enter, for example, if you get number 18, please type in **abcdefg**
 
 	![](./media/find-your-account.PNG)
 
