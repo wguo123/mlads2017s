@@ -70,7 +70,7 @@ Get started with extending U-SQL with R : https://docs.microsoft.com/en-us/azure
 Sample code available when you install extensions. Location for samples : /usqlext/samples/R
 
 
-## Exercise 1:
+## Exercise 1: Make predictions (with confidence intervals) using pre-trained model in rda format
 	REFERENCE ASSEMBLY [ExtR];
 
 	DEPLOY RESOURCE @"/usqlext/samples/R/RinUSQL_PredictUsingLinearModelasDF.R";
@@ -115,7 +115,7 @@ Sample code available when you install extensions. Location for samples : /usqle
 
 	OUTPUT @RScriptOutput TO @OutputFilePredictions USING Outputters.Tsv();
 
-## Exercise 2:
+## Exercise 2: Train and save different models in each partition
 	REFERENCE ASSEMBLY [ExtR];
 	
 	DEPLOY RESOURCE @"/usqlext/samples/R/RinUSQL_TrainLinearModel_AsBinaryDF.R";
@@ -156,7 +156,7 @@ In the R script:
 	# byte stream can go up to 4mb 
 	outputToUSQL <- data.frame(Model=base64encode(serialize(lm.fit, NULL)), stringsAsFactors = FALSE)
 
-## Exercise 3:
+## Exercise 3: Make predictions using models from different partitions
 
 	REFERENCE ASSEMBLY [ExtR];
 	
